@@ -1,0 +1,436 @@
+{% extends "contabilidad/base.html" %}
+
+{% block title %}Apartado de Resultados | ContaCostos Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pie-chart-circle {
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        position: relative;
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+        border: 4px solid #ffffff;
+        margin: 0 auto;
+        transition: transform 0.2s ease;
+    }
+    .pie-chart-circle:hover {
+        transform: scale(1.03);
+    }
+    .pie-legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Banner Principal del Apartado de Resultados -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm bg-dark text-white">
+            <div class="card-body p-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <span class="badge bg-info text-dark fw-bold mb-2">APARTADO FINAL DE RESULTADOS</span>
+                    <h4 class="fw-bold mb-1">
+                        <i class="bi bi-pie-chart-fill text-info me-2"></i>Resultado General: Costos por cada Orden de Producción y Materia Prima Final
+                    </h4>
+                    <p class="text-white-50 small mb-0">
+                        Arroja el desglose exacto de <strong>cada uno de los costos de cada Orden de Producción (M.P., M.O. y G.I. prorrateado)</strong> junto con el <strong>Saldo Final de Materia Prima en Almacén</strong>.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="bg-white text-dark rounded-3 px-3 py-2 text-end">
+                        <div class="text-muted" style="font-size: 0.72rem;">M. PRIMA FINAL EN ALMACÉN</div>
+                        <div class="fs-5 fw-bold text-primary">${{ mp_final_saldo|floatformat:2 }}</div>
+                    </div>
+                    <div class="bg-white text-dark rounded-3 px-3 py-2 text-end">
+                        <div class="text-muted" style="font-size: 0.72rem;">COSTO TOTAL ÓRDENES</div>
+                        <div class="fs-5 fw-bold text-success">${{ suma_total_ordenes|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARTE 1: CADA UNO DE LOS COSTOS DE CADA ORDEN DE PRODUCCIÓN -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-1-circle-fill text-primary me-2"></i>Costos Detallados de Cada Orden de Producción
+                </h5>
+                <span class="badge bg-primary-subtle text-primary">{{ ordenes|length }} Órdenes Analizadas</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Orden (O.P.)</th>
+                            <th>Artículo / Producto</th>
+                            <th>Estado</th>
+                            <th class="text-end">Unidades</th>
+                            <th class="text-end bg-primary-subtle">Materia Prima (M.P.)</th>
+                            <th class="text-end bg-info-subtle">Mano de Obra (M.O.)</th>
+                            <th class="text-end">Costo Primo (MP + MO)</th>
+                            <th class="text-end bg-warning-subtle">Gastos Indirectos (G.I.)</th>
+                            <th class="text-end bg-success-subtle">Costo Total Orden ($)</th>
+                            <th class="text-end">Costo Unitario ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for op in ordenes %}
+                        <tr>
+                            <td class="text-center fw-bold">
+                                <a href="{% url 'ordenes_produccion' %}?op={{ op.id }}" class="badge bg-dark fs-6 text-decoration-none">
+                                    {{ op.codigo }}
+                                </a>
+                            </td>
+                            <td class="fw-semibold">{{ op.producto_terminado }}</td>
+                            <td class="text-center">
+                                {% if op.estado == 'TERMINADA' %}
+                                    <span class="badge bg-success">Art. Terminado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">En Proceso</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-semibold">{{ op.cantidad_unidades }}</td>
+                            <td class="text-end fw-bold text-primary bg-primary-subtle">${{ op.total_mp|floatformat:2 }}</td>
+                            <td class="text-end fw-bold text-info-emphasis bg-info-subtle">${{ op.total_mo|floatformat:2 }}</td>
+                            <td class="text-end fw-semibold">${{ op.costo_primo|floatformat:2 }}</td>
+                            <td class="text-end fw-bold text-warning-emphasis bg-warning-subtle">${{ op.total_gi|floatformat:2 }}</td>
+                            <td class="text-end fw-bold text-success bg-success-subtle fs-6">${{ op.costo_total|floatformat:2 }}</td>
+                            <td class="text-end fw-bold text-dark">${{ op.costo_unitario|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                No hay órdenes registradas aún. Captura tus órdenes desde el menú <strong>1. Captura</strong> o haz clic en <strong>"Cargar Datos Preguardados"</strong> en la barra superior.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-end">SUMA TOTAL DE LAS ÓRDENES DE PRODUCCIÓN:</td>
+                            <td class="text-end text-info">${{ suma_mp_ordenes|floatformat:2 }}</td>
+                            <td class="text-end text-info">${{ suma_mo_ordenes|floatformat:2 }}</td>
+                            <td class="text-end">${{ suma_primo_ordenes|floatformat:2 }}</td>
+                            <td class="text-end text-warning">${{ suma_gi_ordenes|floatformat:2 }}</td>
+                            <td class="text-end text-success bg-white">${{ suma_total_ordenes|floatformat:2 }}</td>
+                            <td class="text-end">—</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARTE 2: MATERIA PRIMA FINAL Y CONCILIACIÓN DE ALMACÉN + GRÁFICA DE BARRAS -->
+    <div class="col-12 col-xl-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-2-circle-fill text-success me-2"></i>Resultado de Materia Prima Final (Tarjetas de Almacén)
+                </h5>
+                <span class="badge bg-success-subtle text-success">Saldo Final Verificado</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-2 text-center mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light">
+                            <div class="small text-muted">(+) Inv. Inicial MP</div>
+                            <div class="fw-bold text-dark">${{ inv_inicial_mp|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light">
+                            <div class="small text-muted">(+) Compras MP</div>
+                            <div class="fw-bold text-primary">${{ compras_mp|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light">
+                            <div class="small text-muted">(-) Baja a Producción</div>
+                            <div class="fw-bold text-danger">-${{ mp_utilizada|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border border-success rounded bg-success-subtle">
+                            <div class="small text-success-emphasis fw-bold">(=) M. PRIMA FINAL</div>
+                            <div class="fw-bold text-success">${{ mp_final_saldo|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Materia Prima</th>
+                                <th class="text-end">Entradas Totales</th>
+                                <th class="text-end">Salidas a Prod.</th>
+                                <th class="text-end bg-info-subtle">Existencia Final</th>
+                                <th class="text-end">Costo Promedio</th>
+                                <th class="text-end bg-success-subtle">M. Prima Final ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in materias %}
+                            <tr>
+                                <td class="fw-bold">
+                                    <a href="{% url 'tarjetas_almacen' %}?mp={{ m.id }}" class="text-decoration-none">{{ m.codigo }}</a>
+                                </td>
+                                <td>{{ m.nombre }}</td>
+                                <td class="text-end text-primary">{{ m.total_entradas_unidades|floatformat:2 }} {{ m.unidad_medida }}</td>
+                                <td class="text-end text-danger">{{ m.total_salidas_unidades|floatformat:2 }} {{ m.unidad_medida }}</td>
+                                <td class="text-end fw-bold bg-info-subtle">{{ m.existencia_actual|floatformat:2 }} {{ m.unidad_medida }}</td>
+                                <td class="text-end">${{ m.costo_promedio_actual|floatformat:2 }}</td>
+                                <td class="text-end fw-bold bg-success-subtle text-success">${{ m.saldo_actual|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">Sin tarjetas de materia prima registradas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="6" class="text-end">GRAN TOTAL DE MATERIA PRIMA FINAL EN ALMACÉN:</td>
+                                <td class="text-end bg-success text-white">${{ mp_final_saldo|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRÁFICA DE BARRAS COMPARATIVA POR ORDEN -->
+    <div class="col-12 col-xl-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-bar-chart-steps text-primary me-2"></i>Gráfica Comparativa por Orden
+                </h5>
+                <span class="small text-muted">MP + MO + GI</span>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                {% if datos_grafica_ordenes %}
+                <div class="d-flex align-items-end justify-content-around border-bottom border-2 border-dark pb-2 pt-3" style="height: 230px;">
+                    {% for item in datos_grafica_ordenes %}
+                    <div class="d-flex flex-column align-items-center h-100 justify-content-end" style="width: 26%;">
+                        <div class="small fw-bold text-dark mb-1">${{ item.orden.costo_total|floatformat:0 }}</div>
+                        <div class="w-100 rounded-top overflow-hidden d-flex flex-column-reverse shadow-sm border border-dark-subtle" style="height: {{ item.pct_altura }}%;">
+                            <div style="height: {{ item.pct_mp }}%; background-color: #2563eb;" title="M.P.: ${{ item.orden.total_mp }}"></div>
+                            <div style="height: {{ item.pct_mo }}%; background-color: #0891b2;" title="M.O.: ${{ item.orden.total_mo }}"></div>
+                            <div style="height: {{ item.pct_gi }}%; background-color: #f59e0b;" title="G.I.: ${{ item.orden.total_gi }}"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="d-flex justify-content-around pt-2 text-center">
+                    {% for item in datos_grafica_ordenes %}
+                    <div style="width: 26%;">
+                        <div class="fw-bold small">{{ item.orden.codigo }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">{{ item.orden.cantidad_unidades }} uds</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex justify-content-center gap-3 mt-3 small">
+                    <span><i class="bi bi-square-fill text-primary me-1"></i>M.P. Directa</span>
+                    <span><i class="bi bi-square-fill text-info me-1"></i>M.O. Directa</span>
+                    <span><i class="bi bi-square-fill text-warning me-1"></i>G.I. Prorrateado</span>
+                </div>
+                {% else %}
+                <div class="text-center text-muted my-auto py-4">
+                    Registra órdenes o carga los datos preguardados para visualizar la gráfica.
+                </div>
+                {% endif %}
+
+                <div class="row g-2 mt-3 pt-3 border-top text-center">
+                    <div class="col-6">
+                        <div class="p-2 bg-warning-subtle rounded border border-warning">
+                            <div class="small text-warning-emphasis fw-bold">Saldo en Proceso</div>
+                            <div class="fw-bold text-dark">${{ total_en_proceso|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 bg-success-subtle rounded border border-success">
+                            <div class="small text-success-emphasis fw-bold">Saldo Art. Terminado</div>
+                            <div class="fw-bold text-success">${{ total_terminado|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARTE 3: GRÁFICAS DE PASTEL (DISTRIBUCIÓN DE ELEMENTOS DEL COSTO Y PARTICIPACIÓN POR ORDEN) -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-pie-chart-fill text-primary me-2"></i>3. Gráfica de Pastel: Distribución del Costo de Producción
+                </h5>
+                <span class="badge bg-info-subtle text-info-emphasis">Análisis Porcentual Visual</span>
+            </div>
+            <div class="card-body p-4">
+                {% if suma_total_ordenes > 0 %}
+                <div class="row g-4 align-items-center">
+                    <!-- Gráfica de Pastel A: Por Elementos del Costo (M.P., M.O., G.I.) -->
+                    <div class="col-12 col-lg-6 border-end-lg">
+                        <h6 class="fw-bold text-center text-secondary mb-3">
+                            A) Proporción por Elemento del Costo (M.P. vs M.O. vs G.I.)
+                        </h6>
+                        <div class="row align-items-center g-3">
+                            <div class="col-sm-6 text-center">
+                                <div class="mx-auto" style="max-width: 230px;">
+                                    <canvas id="canvasPastelElementos" width="220" height="220"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="list-group list-group-flush small">
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="pie-legend-dot" style="background-color: #2563eb;"></span>
+                                            <div>
+                                                <div class="fw-bold">Materia Prima (M.P.)</div>
+                                                <div class="text-muted">${{ suma_mp_ordenes|floatformat:2 }}</div>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill fs-6">{{ pct_mp_global }}%</span>
+                                    </div>
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="pie-legend-dot" style="background-color: #0891b2;"></span>
+                                            <div>
+                                                <div class="fw-bold">Mano de Obra (M.O.)</div>
+                                                <div class="text-muted">${{ suma_mo_ordenes|floatformat:2 }}</div>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-info text-dark rounded-pill fs-6">{{ pct_mo_global }}%</span>
+                                    </div>
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="pie-legend-dot" style="background-color: #f59e0b;"></span>
+                                            <div>
+                                                <div class="fw-bold">Gastos Indirectos (G.I.)</div>
+                                                <div class="text-muted">${{ suma_gi_ordenes|floatformat:2 }}</div>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-warning text-dark rounded-pill fs-6">{{ pct_gi_global }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfica de Pastel B: Participación por Orden de Producción -->
+                    <div class="col-12 col-lg-6">
+                        <h6 class="fw-bold text-center text-secondary mb-3">
+                            B) Distribución del Costo Total por Orden de Producción
+                        </h6>
+                        <div class="row align-items-center g-3">
+                            <div class="col-sm-6 text-center">
+                                <div class="mx-auto" style="max-width: 230px;">
+                                    <canvas id="canvasPastelOrdenes" width="220" height="220"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="list-group list-group-flush small">
+                                    {% for reb in rebanadas_pastel_ordenes %}
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="pie-legend-dot" style="background-color: {{ reb.color }};"></span>
+                                            <div>
+                                                <div class="fw-bold">{{ reb.codigo }}</div>
+                                                <div class="text-muted">${{ reb.importe|floatformat:2 }}</div>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-dark rounded-pill fs-6">{{ reb.porcentaje }}%</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-pie-chart fs-1 d-block mb-2 text-secondary"></i>
+                    <h6 class="fw-bold">Sin datos suficientes para graficar</h6>
+                    <p class="small mb-3">Registra tus órdenes y movimientos de producción o haz clic en <strong>"Cargar Datos Preguardados"</strong> para visualizar las gráficas de pastel.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const datosElementos = {{ pastel_elementos_json|default:"null"|safe }};
+    const datosOrdenes = {{ pastel_ordenes_json|default:"null"|safe }};
+
+    function dibujarGraficaPastel(canvasId, datos) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !datos || !datos.valores || datos.valores.length === 0) return;
+
+        const ctx = canvas.getContext("2d");
+        const total = datos.valores.reduce((acc, v) => acc + v, 0);
+        if (total <= 0) return;
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const radio = Math.min(cx, cy) - 8;
+
+        let anguloInicio = -Math.PI / 2;
+
+        datos.valores.forEach((valor, i) => {
+            if (valor <= 0) return;
+            const fraccion = valor / total;
+            const anguloFin = anguloInicio + fraccion * (Math.PI * 2);
+
+            // Dibujar rebanada del pastel
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radio, anguloInicio, anguloFin);
+            ctx.closePath();
+            ctx.fillStyle = datos.colores[i % datos.colores.length];
+            ctx.fill();
+
+            // Borde blanco entre rebanadas
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = "#ffffff";
+            ctx.stroke();
+
+            // Dibujar etiqueta de porcentaje dentro de la rebanada si es >= 6%
+            const pct = datos.porcentajes[i];
+            if (pct >= 6) {
+                const anguloMedio = anguloInicio + (anguloFin - anguloInicio) / 2;
+                const rx = cx + Math.cos(anguloMedio) * (radio * 0.62);
+                const ry = cy + Math.sin(anguloMedio) * (radio * 0.62);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 12px system-ui, sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(pct.toFixed(1) + "%", rx, ry);
+            }
+
+            anguloInicio = anguloFin;
+        });
+    }
+
+    dibujarGraficaPastel("canvasPastelElementos", datosElementos);
+    dibujarGraficaPastel("canvasPastelOrdenes", datosOrdenes);
+});
+</script>
+{% endblock %}

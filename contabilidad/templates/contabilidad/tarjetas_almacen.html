@@ -1,0 +1,186 @@
+{% extends "contabilidad/base.html" %}
+
+{% block title %}Tarjetas de Almacén | ContaCostos Pro{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Encabezado de Tarjetas de Almacén -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3 p-md-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        <i class="bi bi-card-checklist text-primary me-2"></i>Tarjetas de Almacén de Materia Prima (Kardex)
+                    </h4>
+                    <p class="text-secondary small mb-0">
+                        Control contable de <strong>Alta Inventario Inicial</strong>, <strong>Alta cada vez que compramos</strong> y <strong>Baja a Producción en Proceso</strong> afectando directamente a las Órdenes de Producción correspondientes.
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'captura' %}?tab=mp_alta" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Alta MP (Saldo / Compra)
+                    </a>
+                    <a href="{% url 'captura' %}?tab=mp_baja" class="btn btn-sm btn-warning fw-semibold">
+                        <i class="bi bi-box-arrow-right me-1"></i>Baja a Producción
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Tarjetas de Almacén -->
+    <div class="col-12 col-lg-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold py-3">
+                <i class="bi bi-collection me-1 text-info"></i>Catálogo de Tarjetas MP
+            </div>
+            <div class="list-group list-group-flush">
+                {% for m in materias %}
+                <a href="?mp={{ m.id }}" class="list-group-item list-group-item-action py-3 {% if mp_activa and mp_activa.id == m.id %}active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ m.codigo }}</span>
+                        <span class="badge {% if mp_activa and mp_activa.id == m.id %}bg-light text-dark{% else %}bg-primary-subtle text-primary{% endif %}">
+                            ${{ m.saldo_actual|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div class="small mt-1">{{ m.nombre }}</div>
+                    <div class="small {% if mp_activa and mp_activa.id == m.id %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Existencia: <strong>{{ m.existencia_actual|floatformat:2 }} {{ m.unidad_medida }}</strong> | Prom: ${{ m.costo_promedio_actual|floatformat:2 }}
+                    </div>
+                </a>
+                {% empty %}
+                <div class="p-4 text-center text-muted small">
+                    No hay tarjetas registradas.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista Detallada de la Tarjeta de Almacén Activa -->
+    <div class="col-12 col-lg-9">
+        {% if mp_activa %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <div class="row align-items-center g-2">
+                    <div class="col-md-7">
+                        <span class="badge bg-primary mb-1">TARJETA DE ALMACÉN ACTIVA</span>
+                        <h5 class="fw-bold mb-0">{{ mp_activa.codigo }} — {{ mp_activa.nombre }}</h5>
+                        <small class="text-muted">
+                            Unidad: <strong>{{ mp_activa.get_unidad_medida_display }}</strong>
+                            {% if mp_activa.email_proveedor %} | Proveedor: <code>{{ mp_activa.email_proveedor }}</code>{% endif %}
+                        </small>
+                    </div>
+                    <div class="col-md-5 text-md-end">
+                        <div class="d-inline-block bg-light border rounded-3 px-3 py-2 text-start">
+                            <div class="text-muted" style="font-size: 0.72rem;">SALDO FINAL DE MATERIA PRIMA</div>
+                            <div class="fs-5 fw-bold text-success">${{ mp_activa.saldo_actual|floatformat:2 }}</div>
+                            <div class="small text-secondary">{{ mp_activa.existencia_actual|floatformat:2 }} {{ mp_activa.unidad_medida }} @ ${{ mp_activa.costo_promedio_actual|floatformat:2 }} c/u</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0 table-kardex">
+                    <thead>
+                        <tr class="text-center">
+                            <th rowspan="2">Fecha</th>
+                            <th rowspan="2">Referencia</th>
+                            <th rowspan="2">Concepto / Movimiento</th>
+                            <th rowspan="2">Orden Afectada</th>
+                            <th colspan="3" class="bg-primary-subtle text-primary-emphasis">Unidades ({{ mp_activa.unidad_medida }})</th>
+                            <th colspan="2" class="bg-info-subtle text-info-emphasis">Costos ($)</th>
+                            <th colspan="3" class="bg-success-subtle text-success-emphasis">Valores Monetarios ($)</th>
+                        </tr>
+                        <tr class="text-center">
+                            <th>Entrada</th>
+                            <th>Salida</th>
+                            <th>Existencia</th>
+                            <th>Unitario</th>
+                            <th>Promedio</th>
+                            <th>Debe (+)</th>
+                            <th>Haber (-)</th>
+                            <th>Saldo (=)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in mp_activa.movimientos.all %}
+                        <tr>
+                            <td class="text-center"><code>{{ mov.fecha|date:"Y-m-d" }}</code></td>
+                            <td class="fw-semibold text-center">{{ mov.referencia }}</td>
+                            <td>
+                                {% if mov.tipo_movimiento == 'SALDO_INICIAL' %}
+                                    <span class="badge bg-primary-subtle text-primary me-1">Alta Inventario Inicial</span>
+                                {% elif mov.tipo_movimiento == 'COMPRA' %}
+                                    <span class="badge bg-success-subtle text-success me-1">Alta Compra MP</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis me-1">Baja Prod. en Proceso</span>
+                                {% endif %}
+                                {% if mov.observaciones %}
+                                    <small class="text-muted d-block">{{ mov.observaciones }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if mov.orden_produccion %}
+                                    <a href="{% url 'ordenes_produccion' %}?op={{ mov.orden_produccion.id }}" class="badge bg-dark text-decoration-none">
+                                        <i class="bi bi-arrow-right-circle me-1"></i>{{ mov.orden_produccion.codigo }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end {% if mov.unidades_entrada > 0 %}fw-bold text-primary{% else %}text-muted{% endif %}">
+                                {{ mov.unidades_entrada|floatformat:2 }}
+                            </td>
+                            <td class="text-end {% if mov.unidades_salida > 0 %}fw-bold text-danger{% else %}text-muted{% endif %}">
+                                {{ mov.unidades_salida|floatformat:2 }}
+                            </td>
+                            <td class="text-end fw-bold bg-light">{{ mov.existencia|floatformat:2 }}</td>
+                            <td class="text-end">${{ mov.costo_unitario|floatformat:2 }}</td>
+                            <td class="text-end fw-semibold">${{ mov.costo_promedio|floatformat:2 }}</td>
+                            <td class="text-end {% if mov.debe > 0 %}fw-bold text-success{% else %}text-muted{% endif %}">
+                                ${{ mov.debe|floatformat:2 }}
+                            </td>
+                            <td class="text-end {% if mov.haber > 0 %}fw-bold text-danger{% else %}text-muted{% endif %}">
+                                ${{ mov.haber|floatformat:2 }}
+                            </td>
+                            <td class="text-end fw-bold bg-success-subtle text-dark">${{ mov.saldo|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="12" class="text-center text-muted py-4">
+                                Esta tarjeta aún no tiene movimientos registrados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="4" class="text-end">TOTALES ACUMULADOS EN TARJETA:</td>
+                            <td class="text-end text-primary">{{ mp_activa.total_entradas_unidades|floatformat:2 }}</td>
+                            <td class="text-end text-danger">{{ mp_activa.total_salidas_unidades|floatformat:2 }}</td>
+                            <td class="text-end">{{ mp_activa.existencia_actual|floatformat:2 }}</td>
+                            <td colspan="2" class="text-end">Costo Prom. Final: ${{ mp_activa.costo_promedio_actual|floatformat:2 }}</td>
+                            <td class="text-end text-success">${{ mp_activa.total_debe|floatformat:2 }}</td>
+                            <td class="text-end text-danger">${{ mp_activa.total_haber|floatformat:2 }}</td>
+                            <td class="text-end bg-success text-white">${{ mp_activa.saldo_actual|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-0 shadow-sm p-5 text-center">
+            <i class="bi bi-card-checklist fs-1 text-muted mb-2"></i>
+            <h5 class="fw-bold">No hay Tarjetas de Almacén registradas</h5>
+            <p class="text-secondary">Crea una tarjeta desde el Centro de Captura o carga los datos de ejemplo del pizarrón.</p>
+            <div>
+                <a href="{% url 'captura' %}?tab=mp_catalogo" class="btn btn-primary">Abrir Primera Tarjeta de Almacén</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

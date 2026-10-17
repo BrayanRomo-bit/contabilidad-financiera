@@ -1,0 +1,941 @@
+{% extends "contabilidad/base.html" %}
+
+{% block title %}Centro de Captura | ContaCostos Pro{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Encabezado y Guía del Flujo del Pizarrón -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3 p-md-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Centro de Captura de Información Contable
+                    </h4>
+                    <p class="text-secondary mb-0 small">
+                        Selecciona el tipo de captura según el flujo contable: <strong>MP - Alta (Saldo / Compramos)</strong>, <strong>Baja a Producción (Afecta O.P.)</strong>, <strong>Alta O.P.</strong>, <strong>M.O. (Nómina Operarios)</strong>, <strong>G.I. (Gastos Indirectos)</strong> o <strong>Baja de Producción (Art. Terminado)</strong>.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-light text-dark border px-3 py-2">
+                        <span class="text-danger fw-bold">*</span> Campo Obligatorio
+                    </span>
+                    <span class="badge bg-light text-secondary border px-3 py-2">
+                        <i class="bi bi-eye me-1 text-primary"></i>Vista Previa antes de Guardar
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menú Lateral de Opciones de Captura (Esquema del Pizarrón) -->
+    <div class="col-12 col-lg-3">
+        <div class="card border-0 shadow-sm sticky-lg-top" style="top: 4.5rem;">
+            <div class="card-header bg-dark text-white fw-bold py-3">
+                <i class="bi bi-diagram-2 me-1 text-info"></i>Ramas de Captura
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="?tab=mp_alta" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'mp_alta' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-box-arrow-in-down me-2"></i>M.P. - Alta (Saldo / Compra)</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'mp_alta' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Inventario inicial o compras de Materia Prima
+                    </small>
+                </a>
+
+                <a href="?tab=mp_baja" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'mp_baja' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-box-arrow-right me-2"></i>Baja Producción (M.P. a O.P.)</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'mp_baja' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Salida de almacén que afecta a la Orden
+                    </small>
+                </a>
+
+                <a href="?tab=op_alta" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'op_alta' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-file-earmark-plus me-2"></i>Alta O.P. (Nueva Orden)</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'op_alta' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Abrir Orden de Producción (ej. 1050, 1051)
+                    </small>
+                </a>
+
+                <a href="?tab=mo_captura" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'mo_captura' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people-fill me-2"></i>M.O. (Nómina a Operarios)</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'mo_captura' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Cargar pago de nómina directa a una O.P.
+                    </small>
+                </a>
+
+                <a href="?tab=gi_captura" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'gi_captura' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-lightning-charge-fill me-2"></i>G.I. (Gastos Indirectos)</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'gi_captura' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        M.P.I., S y S de supervisores, luz, etc.
+                    </small>
+                </a>
+
+                <a href="?tab=baja_prod" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'baja_prod' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-check2-all me-2"></i>Baja de Prod. (A Terminado)</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'baja_prod' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Concluir Orden y enviar a Art. Terminado
+                    </small>
+                </a>
+
+                <a href="?tab=mp_catalogo" class="list-group-item list-group-item-action py-3 {% if tab_activa == 'mp_catalogo' %}active fw-bold{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-folder-plus me-2"></i>Nueva Tarjeta de Almacén</span>
+                        <i class="bi bi-chevron-right small"></i>
+                    </div>
+                    <small class="d-block {% if tab_activa == 'mp_catalogo' %}text-white-50{% else %}text-muted{% endif %} mt-1">
+                        Dar de alta un nuevo insumo en catálogo
+                    </small>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área Central del Formulario Seleccionado -->
+    <div class="col-12 col-lg-9">
+
+        <!-- 1. FORMULARIO: M.P. - ALTA (SALDO INICIAL / COMPRAMOS) -->
+        {% if tab_activa == 'mp_alta' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-primary mb-1">TARJETAS DE ALMACÉN</span>
+                    <h5 class="fw-bold mb-0">M.P. - Alta: Inventario Inicial (Saldo) o Compra de Materia Prima</h5>
+                </div>
+                <a href="?tab=mp_catalogo" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Crear Nueva Tarjeta MP
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="M.P. - Alta en Tarjeta de Almacén (Saldo / Compra)">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="mp_alta">
+
+                    <!-- Bloque 1: Datos Generales -->
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Datos Generales de la Entrada
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_alta.materia_prima.id_for_label }}" class="form-label">
+                                    Materia Prima (Tarjeta) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_alta.materia_prima }}
+                                {% if form_mp_alta.materia_prima.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_alta.materia_prima.errors|join:", " }}</div>
+                                {% endif %}
+                                <div class="form-text" id="ayuda_alta_mp_actual">Selecciona una tarjeta para ver su existencia y costo promedio actual.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_alta.tipo_movimiento.id_for_label }}" class="form-label">
+                                    Motivo del Alta <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_alta.tipo_movimiento }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_alta.fecha.id_for_label }}" class="form-label">
+                                    Fecha Estándar (YYYY-MM-DD) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_alta.fecha }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_alta.referencia.id_for_label }}" class="form-label">
+                                    Folio / Factura / Referencia <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_alta.referencia }}
+                                {% if form_mp_alta.referencia.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_alta.referencia.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloque 2: Detalles Específicos -->
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Detalles Específicos y Costeo (Debe)
+                        </div>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_alta.unidades_entrada.id_for_label }}" class="form-label">
+                                    Unidades de Entrada <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_alta.unidades_entrada }}
+                                {% if form_mp_alta.unidades_entrada.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_alta.unidades_entrada.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_alta.costo_unitario.id_for_label }}" class="form-label">
+                                    Costo Unitario ($) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_alta.costo_unitario }}
+                                {% if form_mp_alta.costo_unitario.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_alta.costo_unitario.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-2 bg-light border rounded-3 text-center">
+                                    <div class="text-muted small">Importe Total Entrada (Debe)</div>
+                                    <div class="fs-5 fw-bold text-success" id="calc_alta_mp_debe">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloque 3: Observaciones -->
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_mp_alta.observaciones.id_for_label }}" class="form-label">
+                            Notas del Movimiento <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_mp_alta.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Guardar Alta MP
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 2. FORMULARIO: BAJA PRODUCCIÓN EN PROCESO (AFECTA ÓRDENES) -->
+        {% if tab_activa == 'mp_baja' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <span class="badge bg-warning text-dark mb-1">AFECTACIÓN DIRECTA A ORDEN DE PRODUCCIÓN</span>
+                <h5 class="fw-bold mb-0">Baja de Materia Prima a Producción en Proceso</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="Baja de Almacén hacia Producción en Proceso (Cargo de M.P. a Orden)">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="mp_baja">
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Datos Generales y Orden Afectada
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_baja.materia_prima.id_for_label }}" class="form-label">
+                                    Tarjeta de Materia Prima <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_baja.materia_prima }}
+                                <div class="form-text text-primary fw-semibold" id="ayuda_baja_mp_stock"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_baja.orden_produccion.id_for_label }}" class="form-label">
+                                    Orden de Producción que recibe la M.P. <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_baja.orden_produccion }}
+                                {% if form_mp_baja.orden_produccion.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_baja.orden_produccion.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_baja.fecha.id_for_label }}" class="form-label">
+                                    Fecha de Salida (YYYY-MM-DD) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_baja.fecha }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_baja.referencia.id_for_label }}" class="form-label">
+                                    Vale / Folio de Requisición <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_baja.referencia }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Cantidad Solicitada y Costo Promedio Aplicable (Haber)
+                        </div>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_baja.unidades_salida.id_for_label }}" class="form-label">
+                                    Unidades a Enviar al Proceso <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_baja.unidades_salida }}
+                                {% if form_mp_baja.unidades_salida.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_baja.unidades_salida.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-2 bg-light border rounded-3 text-center">
+                                    <div class="text-muted small">Costo Promedio Vigente en Tarjeta</div>
+                                    <div class="fs-6 fw-bold text-dark" id="calc_baja_mp_cu">$0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-2 bg-warning-subtle border border-warning rounded-3 text-center">
+                                    <div class="text-muted small">Cargo Estimado a la Orden (Haber)</div>
+                                    <div class="fs-5 fw-bold text-danger" id="calc_baja_mp_haber">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_mp_baja.observaciones.id_for_label }}" class="form-label">
+                            Observaciones <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_mp_baja.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-warning fw-bold px-4">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Afectar Orden
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 3. FORMULARIO: ALTA DE ORDEN DE PRODUCCIÓN (O.P.) -->
+        {% if tab_activa == 'op_alta' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <span class="badge bg-info text-dark mb-1">ÓRDENES DE PRODUCCIÓN</span>
+                <h5 class="fw-bold mb-0">Alta de Orden de Producción al Iniciar (Ej. OP-1050, OP-1051, OP-1052)</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="Alta de Nueva Orden de Producción">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="op_alta">
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Datos Generales de la Orden
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form_op_alta.codigo.id_for_label }}" class="form-label">
+                                    Código de Orden (O.P.) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_op_alta.codigo }}
+                                {% if form_op_alta.codigo.errors %}
+                                    <div class="text-danger small mt-1">{{ form_op_alta.codigo.errors|join:", " }}</div>
+                                {% endif %}
+                                <div class="form-text">Si escribes <code>1050</code> se normaliza a <code>OP-1050</code>.</div>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="{{ form_op_alta.producto_terminado.id_for_label }}" class="form-label">
+                                    Artículo a Producir <span class="req-badge">*</span>
+                                </label>
+                                {{ form_op_alta.producto_terminado }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Detalles Específicos del Lote
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form_op_alta.cantidad_unidades.id_for_label }}" class="form-label">
+                                    Cantidad a Producir (Entero) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_op_alta.cantidad_unidades }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_op_alta.fecha_apertura.id_for_label }}" class="form-label">
+                                    Fecha de Inicio (YYYY-MM-DD) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_op_alta.fecha_apertura }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_op_alta.email_supervisor.id_for_label }}" class="form-label">
+                                    Correo del Supervisor <span class="opt-badge">Opcional</span>
+                                </label>
+                                {{ form_op_alta.email_supervisor }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_op_alta.observaciones.id_for_label }}" class="form-label">
+                            Especificaciones Técnicas <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_op_alta.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary fw-bold px-4">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Abrir Orden
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 4. FORMULARIO: MANO DE OBRA DIRECTA (M.O.) -->
+        {% if tab_activa == 'mo_captura' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <span class="badge bg-success mb-1">MANO DE OBRA DIRECTA (M.O.)</span>
+                <h5 class="fw-bold mb-0">Pago de Nómina a Operarios por Orden de Producción</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="Cargo de Mano de Obra Directa (Nómina Operarios)">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="mo_captura">
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Datos Generales de Nómina
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form_mo.orden_produccion.id_for_label }}" class="form-label">
+                                    Orden de Producción Afectada <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mo.orden_produccion }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mo.fecha.id_for_label }}" class="form-label">
+                                    Fecha de Pago (YYYY-MM-DD) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mo.fecha }}
+                            </div>
+                            <div class="col-md-5">
+                                <label for="{{ form_mo.referencia_nomina.id_for_label }}" class="form-label">
+                                    Folio de Nómina <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mo.referencia_nomina }}
+                            </div>
+                            <div class="col-md-7">
+                                <label for="{{ form_mo.operario_departamento.id_for_label }}" class="form-label">
+                                    Operarios / Cuadrilla <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mo.operario_departamento }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Horas e Importe de Nómina Directa
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form_mo.horas_trabajadas.id_for_label }}" class="form-label">
+                                    Horas Directas <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mo.horas_trabajadas }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_mo.cuota_por_hora.id_for_label }}" class="form-label">
+                                    Cuota por Hora ($) <span class="opt-badge">Autocalcula</span>
+                                </label>
+                                {{ form_mo.cuota_por_hora }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_mo.importe_total.id_for_label }}" class="form-label">
+                                    Importe Total Nómina ($) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mo.importe_total }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_mo.observaciones.id_for_label }}" class="form-label">
+                            Observaciones <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_mo.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Cargar M.O. a la Orden
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 5. FORMULARIO: GASTOS INDIRECTOS (G.I.) -->
+        {% if tab_activa == 'gi_captura' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-secondary mb-1">GASTOS INDIRECTOS DE FABRICACIÓN (G.I.)</span>
+                    <h5 class="fw-bold mb-0">Agregar Gasto Indirecto (M.P.I., S y S de Supervisores, Luz, etc.)</h5>
+                </div>
+                <a href="{% url 'costos_indirectos' %}" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-calculator me-1"></i>Ir a Prorratear G.I.
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="Captura de Gasto Indirecto de Fabricación (G.I.)">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="gi_captura">
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Datos Generales del Gasto Indirecto
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form_gi.codigo_referencia.id_for_label }}" class="form-label">
+                                    Folio / Referencia G.I. <span class="req-badge">*</span>
+                                </label>
+                                {{ form_gi.codigo_referencia }}
+                                {% if form_gi.codigo_referencia.errors %}
+                                    <div class="text-danger small mt-1">{{ form_gi.codigo_referencia.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_gi.fecha.id_for_label }}" class="form-label">
+                                    Fecha (YYYY-MM-DD) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_gi.fecha }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_gi.categoria.id_for_label }}" class="form-label">
+                                    Categoría G.I. <span class="req-badge">*</span>
+                                </label>
+                                {{ form_gi.categoria }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Concepto e Importe a Acumular para Prorrateo
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label for="{{ form_gi.concepto.id_for_label }}" class="form-label">
+                                    Concepto Descriptivo <span class="req-badge">*</span>
+                                </label>
+                                {{ form_gi.concepto }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_gi.importe.id_for_label }}" class="form-label">
+                                    Importe ($) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_gi.importe }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_gi.observaciones.id_for_label }}" class="form-label">
+                            Observaciones <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_gi.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-dark fw-bold px-4">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Guardar G.I.
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 6. FORMULARIO: BAJA DE PRODUCCIÓN (TRANSFERENCIA A ARTÍCULO TERMINADO) -->
+        {% if tab_activa == 'baja_prod' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <span class="badge bg-success mb-1">ALMACÉN DE ARTÍCULOS TERMINADOS</span>
+                <h5 class="fw-bold mb-0">Baja de Producción: Concluir Orden y Enviar a Artículo Terminado</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="Baja de Producción y Entrada a Almacén de Artículos Terminados">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="baja_prod">
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Selección de Orden Terminada
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form_baja_prod.orden_produccion.id_for_label }}" class="form-label">
+                                    Orden de Producción a Concluir <span class="req-badge">*</span>
+                                </label>
+                                {{ form_baja_prod.orden_produccion }}
+                                {% if form_baja_prod.orden_produccion.errors %}
+                                    <div class="text-danger small mt-1">{{ form_baja_prod.orden_produccion.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form_baja_prod.codigo_entrada.id_for_label }}" class="form-label">
+                                    Folio Entrada A.T. <span class="req-badge">*</span>
+                                </label>
+                                {{ form_baja_prod.codigo_entrada }}
+                                {% if form_baja_prod.codigo_entrada.errors %}
+                                    <div class="text-danger small mt-1">{{ form_baja_prod.codigo_entrada.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form_baja_prod.fecha_entrada.id_for_label }}" class="form-label">
+                                    Fecha (YYYY-MM-DD) <span class="req-badge">*</span>
+                                </label>
+                                {{ form_baja_prod.fecha_entrada }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Resumen Automático de Costos Acumulados en la Orden
+                        </div>
+                        <div class="row g-2 text-center" id="resumen_costos_orden_baja">
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 bg-light border rounded">
+                                    <div class="small text-muted">M.P. Acumulada</div>
+                                    <div class="fw-bold" id="baja_op_mp">$0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 bg-light border rounded">
+                                    <div class="small text-muted">M.O. Acumulada</div>
+                                    <div class="fw-bold" id="baja_op_mo">$0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 bg-light border rounded">
+                                    <div class="small text-muted">G.I. Prorrateado</div>
+                                    <div class="fw-bold" id="baja_op_gi">$0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="p-2 bg-success-subtle border border-success rounded">
+                                    <div class="small text-success-emphasis">Costo Total / Unitario</div>
+                                    <div class="fw-bold text-success" id="baja_op_total">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_baja_prod.observaciones.id_for_label }}" class="form-label">
+                            Notas de Entrega a Almacén de Terminados <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_baja_prod.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Transferir a Artículo Terminado
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 7. FORMULARIO: NUEVA TARJETA DE MATERIA PRIMA EN CATÁLOGO -->
+        {% if tab_activa == 'mp_catalogo' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-bottom">
+                <span class="badge bg-primary mb-1">CATÁLOGO DE ALMACÉN</span>
+                <h5 class="fw-bold mb-0">Apertura de Nueva Tarjeta de Materia Prima</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="form-con-preview" data-titulo-preview="Apertura de Nueva Tarjeta de Almacén de Materia Prima">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo_captura" value="mp_catalogo">
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="bi bi-1-circle-fill text-primary"></i>Sección 1: Datos Generales del Insumo
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_catalogo.codigo.id_for_label }}" class="form-label">
+                                    Código de Tarjeta <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_catalogo.codigo }}
+                                {% if form_mp_catalogo.codigo.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_catalogo.codigo.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <label for="{{ form_mp_catalogo.nombre.id_for_label }}" class="form-label">
+                                    Nombre de Materia Prima <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_catalogo.nombre }}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form_mp_catalogo.unidad_medida.id_for_label }}" class="form-label">
+                                    Unidad <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_catalogo.unidad_medida }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-details">
+                        <div class="section-title">
+                            <i class="bi bi-2-circle-fill text-info"></i>Sección 2: Inventario Inicial (Saldo) y Parámetros
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_catalogo.stock_minimo.id_for_label }}" class="form-label">
+                                    Stock Mínimo de Alerta <span class="req-badge">*</span>
+                                </label>
+                                {{ form_mp_catalogo.stock_minimo }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form_mp_catalogo.email_proveedor.id_for_label }}" class="form-label">
+                                    Correo del Proveedor <span class="opt-badge">Opcional</span>
+                                </label>
+                                {{ form_mp_catalogo.email_proveedor }}
+                                {% if form_mp_catalogo.email_proveedor.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_catalogo.email_proveedor.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch mt-2">
+                                    {{ form_mp_catalogo.registrar_saldo_inicial }}
+                                    <label class="form-check-label fw-semibold" for="chk_saldo_inicial">
+                                        Registrar de inmediato su Alta de Inventario Inicial (Saldo)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_catalogo.fecha_inicial.id_for_label }}" class="form-label">
+                                    Fecha Saldo Inicial (YYYY-MM-DD)
+                                </label>
+                                {{ form_mp_catalogo.fecha_inicial }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_catalogo.unidades_iniciales.id_for_label }}" class="form-label">
+                                    Unidades Iniciales
+                                </label>
+                                {{ form_mp_catalogo.unidades_iniciales }}
+                                {% if form_mp_catalogo.unidades_iniciales.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_catalogo.unidades_iniciales.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form_mp_catalogo.costo_unitario_inicial.id_for_label }}" class="form-label">
+                                    Costo Unitario Inicial ($)
+                                </label>
+                                {{ form_mp_catalogo.costo_unitario_inicial }}
+                                {% if form_mp_catalogo.costo_unitario_inicial.errors %}
+                                    <div class="text-danger small mt-1">{{ form_mp_catalogo.costo_unitario_inicial.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-block section-obs">
+                        <div class="section-title">
+                            <i class="bi bi-3-circle-fill text-secondary"></i>Sección 3: Observaciones
+                        </div>
+                        <label for="{{ form_mp_catalogo.observaciones.id_for_label }}" class="form-label">
+                            Observaciones <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_mp_catalogo.observaciones }}
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary fw-bold px-4">
+                            <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Crear Tarjeta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Bitácora Rápida de Últimas Capturas -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Últimos Movimientos Registrados en Almacén</h6>
+                <a href="{% url 'tarjetas_almacen' %}" class="btn btn-sm btn-link text-decoration-none">Ver Tarjetas Completas <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Referencia</th>
+                            <th>Tarjeta MP</th>
+                            <th>Movimiento</th>
+                            <th>Orden Afectada</th>
+                            <th class="text-end">Debe ($)</th>
+                            <th class="text-end">Haber ($)</th>
+                            <th class="text-end">Saldo ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in ultimos_movimientos_mp %}
+                        <tr>
+                            <td><code>{{ m.fecha|date:"Y-m-d" }}</code></td>
+                            <td class="fw-semibold">{{ m.referencia }}</td>
+                            <td>{{ m.materia_prima.codigo }} - {{ m.materia_prima.nombre }}</td>
+                            <td>
+                                {% if m.tipo_movimiento == 'BAJA_PRODUCCION' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis">Baja a Producción</span>
+                                {% elif m.tipo_movimiento == 'SALDO_INICIAL' %}
+                                    <span class="badge bg-primary-subtle text-primary">Saldo Inicial</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success">Compra MP</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if m.orden_produccion %}
+                                    <span class="badge bg-dark">{{ m.orden_produccion.codigo }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-success fw-semibold">${{ m.debe|floatformat:2 }}</td>
+                            <td class="text-end text-danger fw-semibold">${{ m.haber|floatformat:2 }}</td>
+                            <td class="text-end fw-bold">${{ m.saldo|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">
+                                No hay movimientos aún. Puedes capturar tu propia información arriba o hacer clic en <strong>"Cargar Datos Preguardados"</strong> en la barra superior.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // 1. Ayuda en vivo para M.P. Alta
+    const selAltaMp = document.getElementById("id_alta_mp_select");
+    const inpAltaUnidades = document.getElementById("id_alta_mp_unidades");
+    const inpAltaCosto = document.getElementById("id_alta_mp_costo");
+    const lblAltaDebe = document.getElementById("calc_alta_mp_debe");
+    const ayudaAlta = document.getElementById("ayuda_alta_mp_actual");
+
+    function actualizarCalcAlta() {
+        if (selAltaMp && ayudaAlta) {
+            const info = window.MP_CATALOGO[selAltaMp.value];
+            if (info) {
+                ayudaAlta.innerHTML = `Existencia actual: <strong>${info.existencia.toFixed(2)} ${info.unidad}</strong> | Costo Promedio: <strong>$${info.costo_promedio.toFixed(2)}</strong> | Saldo: <strong>$${info.saldo.toFixed(2)}</strong>`;
+            }
+        }
+        if (inpAltaUnidades && inpAltaCosto && lblAltaDebe) {
+            const u = parseFloat(inpAltaUnidades.value) || 0;
+            const c = parseFloat(inpAltaCosto.value) || 0;
+            lblAltaDebe.textContent = "$" + (u * c).toLocaleString("es-MX", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+    }
+    if (selAltaMp) selAltaMp.addEventListener("change", actualizarCalcAlta);
+    if (inpAltaUnidades) inpAltaUnidades.addEventListener("input", actualizarCalcAlta);
+    if (inpAltaCosto) inpAltaCosto.addEventListener("input", actualizarCalcAlta);
+    actualizarCalcAlta();
+
+    // 2. Ayuda en vivo para Baja a Producción
+    const selBajaMp = document.getElementById("id_baja_mp_select");
+    const inpBajaUnidades = document.getElementById("id_baja_mp_unidades");
+    const lblBajaCu = document.getElementById("calc_baja_mp_cu");
+    const lblBajaHaber = document.getElementById("calc_baja_mp_haber");
+    const ayudaBajaStock = document.getElementById("ayuda_baja_mp_stock");
+
+    function actualizarCalcBaja() {
+        if (!selBajaMp) return;
+        const info = window.MP_CATALOGO[selBajaMp.value];
+        const u = parseFloat(inpBajaUnidades?.value) || 0;
+        if (info) {
+            if (ayudaBajaStock) {
+                ayudaBajaStock.textContent = `Disponible en almacén: ${info.existencia.toFixed(2)} ${info.unidad} (Saldo: $${info.saldo.toFixed(2)})`;
+            }
+            if (lblBajaCu) lblBajaCu.textContent = "$" + info.costo_promedio.toFixed(2);
+            if (lblBajaHaber) {
+                const total = u * info.costo_promedio;
+                lblBajaHaber.textContent = "$" + total.toLocaleString("es-MX", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+        }
+    }
+    if (selBajaMp) selBajaMp.addEventListener("change", actualizarCalcBaja);
+    if (inpBajaUnidades) inpBajaUnidades.addEventListener("input", actualizarCalcBaja);
+    actualizarCalcBaja();
+
+    // 3. Autocalcular Importe de Mano de Obra (Horas * Cuota)
+    const inpMoHoras = document.getElementById("id_mo_horas");
+    const inpMoCuota = document.getElementById("id_mo_cuota");
+    const inpMoImporte = document.getElementById("id_mo_importe");
+
+    function actualizarCalcMo() {
+        if (!inpMoHoras || !inpMoCuota || !inpMoImporte) return;
+        const h = parseFloat(inpMoHoras.value) || 0;
+        const c = parseFloat(inpMoCuota.value) || 0;
+        if (h > 0 && c > 0) {
+            inpMoImporte.value = (h * c).toFixed(2);
+        }
+    }
+    if (inpMoHoras) inpMoHoras.addEventListener("input", actualizarCalcMo);
+    if (inpMoCuota) inpMoCuota.addEventListener("input", actualizarCalcMo);
+
+    // 4. Mostrar costos acumulados al elegir Orden en Baja de Producción
+    const selBajaProdOrden = document.getElementById("id_baja_prod_orden");
+    function actualizarResumenBajaOrden() {
+        if (!selBajaProdOrden) return;
+        const op = window.ORDENES_CATALOGO[selBajaProdOrden.value];
+        if (op) {
+            document.getElementById("baja_op_mp").textContent = "$" + op.mp.toLocaleString("es-MX", {minimumFractionDigits: 2});
+            document.getElementById("baja_op_mo").textContent = "$" + op.mo.toLocaleString("es-MX", {minimumFractionDigits: 2});
+            document.getElementById("baja_op_gi").textContent = "$" + op.gi.toLocaleString("es-MX", {minimumFractionDigits: 2});
+            document.getElementById("baja_op_total").textContent = `$${op.total.toLocaleString("es-MX", {minimumFractionDigits: 2})} ($${op.unitario.toFixed(2)}/u)`;
+        }
+    }
+    if (selBajaProdOrden) selBajaProdOrden.addEventListener("change", actualizarResumenBajaOrden);
+    actualizarResumenBajaOrden();
+});
+</script>
+{% endblock %}
+

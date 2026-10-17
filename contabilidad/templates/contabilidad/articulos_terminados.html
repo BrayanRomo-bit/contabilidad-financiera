@@ -1,0 +1,137 @@
+{% extends "contabilidad/base.html" %}
+
+{% block title %}Artículos Terminados | ContaCostos Pro{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Encabezado -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3 p-md-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        <i class="bi bi-box-seam text-primary me-2"></i>Almacén de Artículos Terminados (Baja de Producción)
+                    </h4>
+                    <p class="text-secondary small mb-0">
+                        Concentra las Órdenes de Producción concluidas que pasaron de Producción en Proceso a Artículo Terminado con su costo total acumulado (<strong>M.P. + M.O. + G.I.</strong>) y costo unitario final.
+                    </p>
+                </div>
+                <div class="bg-success-subtle border border-success rounded-3 px-3 py-2 text-end">
+                    <div class="small text-success-emphasis fw-bold">VALOR TOTAL ARTÍCULOS TERMINADOS</div>
+                    <div class="fs-5 fw-bold text-success">${{ total_valor_terminados|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Izquierda: Formulario Rápido para Concluir Orden en Proceso -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold py-3">
+                <i class="bi bi-check2-circle me-1 text-info"></i>Dar Baja de Producción (Terminar O.P.)
+            </div>
+            <div class="card-body p-4">
+                {% if ordenes_en_proceso %}
+                <form method="post" class="form-con-preview" data-titulo-preview="Transferencia de Orden Concluida a Artículos Terminados">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form_baja_prod.orden_produccion.id_for_label }}" class="form-label">
+                            Orden en Proceso a Concluir <span class="req-badge">*</span>
+                        </label>
+                        {{ form_baja_prod.orden_produccion }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form_baja_prod.codigo_entrada.id_for_label }}" class="form-label">
+                            Folio de Entrada a Almacén A.T. <span class="req-badge">*</span>
+                        </label>
+                        {{ form_baja_prod.codigo_entrada }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form_baja_prod.fecha_entrada.id_for_label }}" class="form-label">
+                            Fecha de Entrada (YYYY-MM-DD) <span class="req-badge">*</span>
+                        </label>
+                        {{ form_baja_prod.fecha_entrada }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form_baja_prod.observaciones.id_for_label }}" class="form-label">
+                            Observaciones <span class="opt-badge">Opcional</span>
+                        </label>
+                        {{ form_baja_prod.observaciones }}
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 fw-bold">
+                        <i class="bi bi-eye me-1"></i>Revisar Vista Previa y Concluir Orden
+                    </button>
+                </form>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-check-all fs-2 text-success d-block mb-2"></i>
+                    Todas las órdenes registradas ya fueron terminadas o no hay órdenes en proceso.
+                    <div class="mt-3">
+                        <a href="{% url 'captura' %}?tab=op_alta" class="btn btn-sm btn-outline-primary">Abrir Nueva Orden de Producción</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Tarjetas e Inventario de Artículos Terminados -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0">Inventario de Lotes Terminados Recibidos de Producción</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Folio A.T.</th>
+                            <th>Orden Origen</th>
+                            <th>Artículo Terminado</th>
+                            <th>Fecha</th>
+                            <th class="text-end">Unidades</th>
+                            <th class="text-end">M.P. ($)</th>
+                            <th class="text-end">M.O. ($)</th>
+                            <th class="text-end">G.I. ($)</th>
+                            <th class="text-end bg-success-subtle">Costo Total ($)</th>
+                            <th class="text-end bg-primary-subtle">Costo Unitario ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for art in articulos %}
+                        <tr>
+                            <td class="fw-bold text-center">{{ art.codigo_entrada }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'ordenes_produccion' %}?op={{ art.orden_produccion.id }}" class="badge bg-dark text-decoration-none">
+                                    {{ art.orden_produccion.codigo }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="fw-semibold">{{ art.nombre_articulo }}</span>
+                                {% if art.observaciones %}
+                                    <small class="text-muted d-block">{{ art.observaciones }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center"><code>{{ art.fecha_entrada|date:"Y-m-d" }}</code></td>
+                            <td class="text-end fw-bold">{{ art.unidades_recibidas }}</td>
+                            <td class="text-end">${{ art.costo_mp|floatformat:2 }}</td>
+                            <td class="text-end">${{ art.costo_mo|floatformat:2 }}</td>
+                            <td class="text-end">${{ art.costo_gi|floatformat:2 }}</td>
+                            <td class="text-end fw-bold bg-success-subtle text-success">${{ art.costo_total|floatformat:2 }}</td>
+                            <td class="text-end fw-bold bg-primary-subtle text-primary">${{ art.costo_unitario|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                Aún no se han recibido órdenes terminadas en este almacén.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

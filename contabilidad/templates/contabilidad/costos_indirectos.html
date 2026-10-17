@@ -1,0 +1,298 @@
+{% extends "contabilidad/base.html" %}
+
+{% block title %}Costos Indirectos y Prorrateo | ContaCostos Pro{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Encabezado -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3 p-md-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1">
+                        <i class="bi bi-diagram-3 text-primary me-2"></i>Gastos / Costos Indirectos de Fabricación (G.I.) y Prorrateo
+                    </h4>
+                    <p class="text-secondary small mb-0">
+                        1) <strong>Agregar</strong> cada gasto indirecto (M.P.I., S y S de supervisores, luz, etc.) &rarr;
+                        2) <strong>Prorratear</strong>: Totalizar los G.I., dividirlos entre la base elegida y mandar cada resultado a las Órdenes de Producción.
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'ordenes_produccion' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-clipboard2-data me-1"></i>Ver Órdenes Afectadas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Izquierda: Captura Rápida y Lista de Gastos Indirectos -->
+    <div class="col-12 col-xl-5">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-dark text-white fw-bold py-3">
+                <i class="bi bi-plus-circle me-1 text-info"></i>1. Agregar Gasto Indirecto (M.P.I., Supervisores, Luz...)
+            </div>
+            <div class="card-body p-3">
+                <form method="post" class="form-con-preview" data-titulo-preview="Agregar Gasto Indirecto (G.I.)">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="agregar_gi">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label for="{{ form_gi.codigo_referencia.id_for_label }}" class="form-label">Folio G.I. <span class="req-badge">*</span></label>
+                            {{ form_gi.codigo_referencia }}
+                            {% if form_gi.codigo_referencia.errors %}
+                                <div class="text-danger small">{{ form_gi.codigo_referencia.errors|join:", " }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_gi.fecha.id_for_label }}" class="form-label">Fecha <span class="req-badge">*</span></label>
+                            {{ form_gi.fecha }}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form_gi.categoria.id_for_label }}" class="form-label">Clasificación <span class="req-badge">*</span></label>
+                            {{ form_gi.categoria }}
+                        </div>
+                        <div class="col-md-8">
+                            <label for="{{ form_gi.concepto.id_for_label }}" class="form-label">Concepto <span class="req-badge">*</span></label>
+                            {{ form_gi.concepto }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_gi.importe.id_for_label }}" class="form-label">Importe ($) <span class="req-badge">*</span></label>
+                            {{ form_gi.importe }}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form_gi.observaciones.id_for_label }}" class="form-label">Observaciones <span class="opt-badge">Opcional</span></label>
+                            {{ form_gi.observaciones }}
+                        </div>
+                        <div class="col-12 text-end mt-2">
+                            <button type="submit" class="btn btn-primary btn-sm fw-bold px-3">
+                                <i class="bi bi-eye me-1"></i>Vista Previa y Agregar G.I.
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de Gastos Indirectos Registrados -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Gastos Indirectos Acumulados</h6>
+                <span class="badge bg-dark">Total: ${{ metricas_globales.gi_acumulado_total|floatformat:2 }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio</th>
+                            <th>Categoría / Concepto</th>
+                            <th class="text-end">Importe ($)</th>
+                            <th class="text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in gastos %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold d-block">{{ g.codigo_referencia }}</span>
+                                <small class="text-muted"><code>{{ g.fecha|date:"Y-m-d" }}</code></small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ g.get_categoria_display }}</span>
+                                <div class="small">{{ g.concepto }}</div>
+                            </td>
+                            <td class="text-end fw-bold">${{ g.importe|floatformat:2 }}</td>
+                            <td class="text-center">
+                                {% if g.prorrateado %}
+                                    <span class="badge bg-success-subtle text-success">Prorrateado</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis">Pendiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">No hay gastos indirectos capturados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Calculadora y Aplicador de Prorrateo a las Órdenes -->
+    <div class="col-12 col-xl-7">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-calculator me-2"></i>2. Prorratear Gastos Indirectos y Mandar a Órdenes de Producción
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <!-- Selector de Simulación en Tiempo Real -->
+                <div class="bg-light border rounded-3 p-3 mb-3">
+                    <form method="get" class="row g-2 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold mb-1">Cambiar Base de Prorrateo (Vista Previa):</label>
+                            <select name="base" class="form-select form-select-sm" onchange="this.form.submit()">
+                                {% for val, texto in form_prorrateo.fields.base_seleccionada.choices %}
+                                    <option value="{{ val }}" {% if base_preview == val %}selected{% endif %}>{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold mb-1">Alcance de G.I.:</label>
+                            <select name="pendientes" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="1" {% if solo_pendientes_preview %}selected{% endif %}>Solo G.I. Pendientes de Prorratear</option>
+                                <option value="0" {% if not solo_pendientes_preview %}selected{% endif %}>Total G.I. Acumulados</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Recalcular</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Fórmula del Pizarrón -->
+                <div class="row g-3 text-center mb-3">
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded-3 bg-warning-subtle">
+                            <div class="small text-muted fw-bold">TOTAL GASTOS INDIRECTOS</div>
+                            <div class="fs-5 fw-bold text-dark">${{ simulacion.total_gi|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded-3 bg-info-subtle">
+                            <div class="small text-muted fw-bold">SUMA TOTAL DE LA BASE</div>
+                            <div class="fs-5 fw-bold text-dark">{{ simulacion.total_base|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded-3 bg-success-subtle">
+                            <div class="small text-muted fw-bold">FACTOR (TOTAL G.I. &divide; BASE)</div>
+                            <div class="fs-5 fw-bold text-success"><code>{{ simulacion.factor }}</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla Vista Previa de Distribución por Orden de Producción -->
+                <h6 class="fw-bold text-dark mb-2">
+                    <i class="bi bi-table me-1 text-primary"></i>Vista Previa de Distribución hacia las Órdenes de Producción:
+                </h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Orden de Producción</th>
+                                <th class="text-end">Base de la Orden</th>
+                                <th class="text-end">&times; Factor</th>
+                                <th class="text-end">% Part.</th>
+                                <th class="text-end bg-warning-subtle">G.I. a Mandar ($)</th>
+                                <th class="text-end bg-success-subtle">Nuevo Costo Orden ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in simulacion.filas %}
+                            <tr>
+                                <td>
+                                    <span class="fw-bold">{{ fila.orden.codigo }}</span>
+                                    <small class="text-muted d-block">{{ fila.orden.producto_terminado }}</small>
+                                </td>
+                                <td class="text-end">{{ fila.valor_base|floatformat:2 }}</td>
+                                <td class="text-end"><code>{{ fila.factor }}</code></td>
+                                <td class="text-end">{{ fila.porcentaje|floatformat:2 }}%</td>
+                                <td class="text-end fw-bold bg-warning-subtle text-dark">+${{ fila.importe_asignado|floatformat:2 }}</td>
+                                <td class="text-end fw-bold bg-success-subtle text-success">${{ fila.nuevo_costo_total|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">No hay órdenes de producción registradas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td class="text-end">TOTALES DEL PRORRATEO:</td>
+                                <td class="text-end">{{ simulacion.total_base|floatformat:2 }}</td>
+                                <td class="text-end">—</td>
+                                <td class="text-end">100.00%</td>
+                                <td class="text-end text-dark">${{ simulacion.total_gi|floatformat:2 }}</td>
+                                <td class="text-end">—</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Formulario de Confirmación para Aplicar Prorrateo -->
+                <form method="post" class="form-con-preview border-top pt-3" data-titulo-preview="Aplicar Prorrateo de Gastos Indirectos a las Órdenes de Producción">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="ejecutar_prorrateo">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="{{ form_prorrateo.codigo.id_for_label }}" class="form-label">Folio Prorrateo <span class="req-badge">*</span></label>
+                            {{ form_prorrateo.codigo }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_prorrateo.fecha.id_for_label }}" class="form-label">Fecha (YYYY-MM-DD) <span class="req-badge">*</span></label>
+                            {{ form_prorrateo.fecha }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form_prorrateo.base_seleccionada.id_for_label }}" class="form-label">Base Definitiva <span class="req-badge">*</span></label>
+                            {{ form_prorrateo.base_seleccionada }}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form_prorrateo.solo_pendientes }}
+                                <label class="form-check-label small fw-semibold" for="{{ form_prorrateo.solo_pendientes.id_for_label }}">
+                                    Incluir únicamente Gastos Indirectos pendientes de prorratear
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form_prorrateo.observaciones.id_for_label }}" class="form-label">Observaciones <span class="opt-badge">Opcional</span></label>
+                            {{ form_prorrateo.observaciones }}
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-success fw-bold px-4" {% if simulacion.total_gi <= 0 %}disabled{% endif %}>
+                                <i class="bi bi-send-check me-1"></i>Confirmar y Mandar Resultados a las Órdenes de Producción
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Historial de Prorrateos Aplicados -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-1 text-primary"></i>Historial de Prorrateos Aplicados a las Órdenes</h6>
+            </div>
+            <div class="card-body p-3">
+                {% for p in prorrateos_historicos %}
+                <div class="border rounded-3 p-3 mb-2 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <span class="badge bg-primary me-1">{{ p.codigo }}</span>
+                            <strong>{{ p.get_base_seleccionada_display }}</strong>
+                            <small class="text-muted ms-2"><code>{{ p.fecha|date:"Y-m-d" }}</code></small>
+                        </div>
+                        <span class="fw-bold text-success">Total Distribuido: ${{ p.total_gastos_indirectos|floatformat:2 }} (Factor: {{ p.factor_prorrateo }})</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for d in p.detalles.all %}
+                        <span class="badge bg-white text-dark border px-2 py-1">
+                            {{ d.orden_produccion.codigo }}: <strong>${{ d.importe_asignado|floatformat:2 }}</strong> ({{ d.porcentaje_participacion }}%)
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted small py-2">Aún no se han ejecutado prorrateos.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
