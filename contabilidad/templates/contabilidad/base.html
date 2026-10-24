@@ -1,275 +1,363 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="light" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema de Contabilidad de Costos y Producción{% endblock %}</title>
+    <title>{% block title %}Contabilidad de Costos{% endblock %}</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem("contacostos_theme") || "light";
+            document.documentElement.setAttribute("data-bs-theme", saved);
+            document.documentElement.setAttribute("data-theme", saved);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        :root {
-            --brand-dark: #0f172a;
-            --brand-primary: #1e40af;
-            --brand-accent: #0284c7;
-            --brand-success: #059669;
-            --brand-warning: #d97706;
-            --bg-soft: #f8fafc;
+        :root,
+        [data-theme="light"] {
+            --bg-page: #f6f7f5;
+            --bg-surface: #ffffff;
+            --bg-subtle: #eef1ee;
+            --text-main: #161e19;
+            --text-muted: #55635a;
+            --border-line: #d6ded8;
+            --accent-primary: #1b5e43;
+            --accent-primary-hover: #144933;
+            --accent-blue: #1e4e79;
+            --accent-amber: #b45309;
+            --accent-danger: #b91c1c;
         }
+
+        [data-theme="dark"] {
+            --bg-page: #111614;
+            --bg-surface: #181f1c;
+            --bg-subtle: #202925;
+            --text-main: #e6ece8;
+            --text-muted: #96a79d;
+            --border-line: #2a3631;
+            --accent-primary: #34d399;
+            --accent-primary-hover: #10b981;
+            --accent-blue: #60a5fa;
+            --accent-amber: #fbbf24;
+            --accent-danger: #f87171;
+        }
+
         body {
-            background-color: var(--bg-soft);
-            color: #1e293b;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+            font-size: 0.9375rem;
+            line-height: 1.5;
         }
-        .navbar-custom {
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+
+        .num,
+        code,
+        .table td.text-end,
+        .table th.text-end {
+            font-family: "IBM Plex Mono", monospace;
+            font-variant-numeric: tabular-nums;
         }
-        .nav-pills-custom .nav-link {
-            color: rgba(255, 255, 255, 0.82);
-            border-radius: 0.5rem;
-            padding: 0.5rem 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
+
+        /* Barra Superior Limpia */
+        .topbar {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-line);
         }
-        .nav-pills-custom .nav-link:hover {
-            color: #fff;
-            background-color: rgba(255, 255, 255, 0.12);
-        }
-        .nav-pills-custom .nav-link.active {
-            color: #fff;
-            background-color: #0284c7;
-            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
-        }
-        .kpi-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            background: #ffffff;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
-        }
-        .section-block {
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #1e40af;
-            border-radius: 0.65rem;
-            background-color: #ffffff;
-            padding: 1.25rem;
-            margin-bottom: 1.15rem;
-        }
-        .section-block.section-details {
-            border-left-color: #0284c7;
-        }
-        .section-block.section-obs {
-            border-left-color: #64748b;
-        }
-        .section-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+
+        .brand-title {
             font-weight: 700;
-            color: #475569;
-            margin-bottom: 0.85rem;
+            font-size: 1.05rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-ledger {
             display: flex;
-            align-items: center;
-            gap: 0.45rem;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
         }
-        .req-badge {
-            color: #dc2626;
-            font-weight: 700;
-            margin-left: 2px;
-        }
-        .opt-badge {
-            font-size: 0.72rem;
-            background-color: #f1f5f9;
-            color: #64748b;
-            padding: 0.1rem 0.45rem;
-            border-radius: 0.35rem;
-            margin-left: 6px;
+
+        .nav-ledger a {
+            display: inline-block;
+            padding: 0.45rem 0.85rem;
+            border-radius: 0.375rem;
+            color: var(--text-muted);
+            text-decoration: none;
             font-weight: 500;
+            font-size: 0.88rem;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
-        .table-kardex th {
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            background-color: #f1f5f9;
-            color: #334155;
+
+        .nav-ledger a:hover {
+            color: var(--text-main);
+            background-color: var(--bg-subtle);
         }
-        .form-label {
+
+        .nav-ledger a.active {
+            color: var(--bg-surface);
+            background-color: var(--accent-primary);
             font-weight: 600;
+        }
+
+        [data-theme="dark"] .nav-ledger a.active {
+            color: #0d1512;
+        }
+
+        /* Superficies tipo Hoja Contable */
+        .sheet {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-line);
+            border-radius: 0.5rem;
+        }
+
+        .sheet-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .sheet-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .sheet-body {
+            padding: 1.25rem;
+        }
+
+        /* Tablas Contables Limpias */
+        .table-ledger {
+            margin-bottom: 0;
+            color: var(--text-main);
+            border-color: var(--border-line);
+        }
+
+        .table-ledger thead th {
+            background-color: var(--bg-subtle);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border-line);
+            padding: 0.65rem 0.75rem;
+            white-space: nowrap;
+        }
+
+        .table-ledger tbody td {
+            padding: 0.65rem 0.75rem;
+            border-color: var(--border-line);
+            vertical-align: middle;
+        }
+
+        .table-ledger tfoot td,
+        .table-ledger tfoot th {
+            background-color: var(--bg-subtle);
+            font-weight: 600;
+            padding: 0.7rem 0.75rem;
+            border-top: 2px solid var(--border-line);
+        }
+
+        /* Formularios */
+        .form-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            margin-bottom: 0.3rem;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: var(--bg-surface);
+            border-color: var(--border-line);
+            color: var(--text-main);
             font-size: 0.9rem;
-            color: #1e293b;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(27, 94, 67, 0.15);
+        }
+
+        .btn-ledger-primary {
+            background-color: var(--accent-primary);
+            color: #ffffff;
+            border: none;
+            font-weight: 600;
+        }
+
+        [data-theme="dark"] .btn-ledger-primary {
+            color: #0d1512;
+        }
+
+        .btn-ledger-primary:hover {
+            background-color: var(--accent-primary-hover);
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .btn-ledger-primary:hover {
+            color: #0d1512;
+        }
+
+        .btn-delete-inline {
+            color: var(--text-muted);
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 0.2rem 0.45rem;
+            border-radius: 0.3rem;
+            font-size: 0.8rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-delete-inline:hover {
+            color: var(--accent-danger);
+            border-color: var(--accent-danger);
+            background-color: rgba(185, 28, 28, 0.08);
+        }
+
+        /* Pestañas laterales de selección */
+        .side-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .side-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.65rem 0.85rem;
+            border-radius: 0.4rem;
+            color: var(--text-main);
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: background-color 0.12s ease;
+        }
+
+        .side-item:hover {
+            background-color: var(--bg-subtle);
+        }
+
+        .side-item.active {
+            background-color: var(--bg-subtle);
+            border-color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .req {
+            color: var(--accent-danger);
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Barra de Navegación Principal -->
-    <nav class="navbar navbar-expand-xl navbar-dark navbar-custom sticky-top py-2">
-        <div class="container-fluid px-3 px-lg-4">
-            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{% url 'captura' %}">
-                <i class="bi bi-calculator-fill text-info fs-4"></i>
-                <div>
-                    <span class="d-block lh-1">ContaCostos Pro</span>
-                    <small class="text-info fw-normal" style="font-size: 0.7rem;">Órdenes de Producción y Almacén</small>
-                </div>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <!-- Barra de Navegación Minimalista -->
+    <header class="topbar sticky-top py-2">
+        <div class="container-xl d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-4 flex-wrap">
+                <a class="brand-title" href="{% url 'captura' %}">
+                    Contabilidad de Costos
+                </a>
+                <nav>
+                    <ul class="nav-ledger">
+                        <li>
+                            <a class="{% if pagina_activa == 'captura' %}active{% endif %}" href="{% url 'captura' %}">Captura</a>
+                        </li>
+                        <li>
+                            <a class="{% if pagina_activa == 'tarjetas' %}active{% endif %}" href="{% url 'tarjetas_almacen' %}">Tarjetas de almacén</a>
+                        </li>
+                        <li>
+                            <a class="{% if pagina_activa == 'ordenes' %}active{% endif %}" href="{% url 'ordenes_produccion' %}">Órdenes</a>
+                        </li>
+                        <li>
+                            <a class="{% if pagina_activa == 'costos_indirectos' %}active{% endif %}" href="{% url 'costos_indirectos' %}">Costos indirectos</a>
+                        </li>
+                        <li>
+                            <a class="{% if pagina_activa == 'articulos_terminados' %}active{% endif %}" href="{% url 'articulos_terminados' %}">Artículo terminado</a>
+                        </li>
+                        <li>
+                            <a class="{% if pagina_activa == 'resultados' %}active{% endif %}" href="{% url 'resultados' %}">Resultados</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
 
-            <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav nav-pills-custom me-auto mb-2 mb-xl-0 gap-1 ms-xl-3">
-                    <li class="nav-item">
-                        <a class="nav-link {% if pagina_activa == 'captura' %}active{% endif %}" href="{% url 'captura' %}">
-                            <i class="bi bi-pencil-square me-1"></i>1. Captura
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if pagina_activa == 'tarjetas' %}active{% endif %}" href="{% url 'tarjetas_almacen' %}">
-                            <i class="bi bi-card-checklist me-1"></i>2. Tarjetas de Almacén
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if pagina_activa == 'ordenes' %}active{% endif %}" href="{% url 'ordenes_produccion' %}">
-                            <i class="bi bi-clipboard2-data me-1"></i>3. Órdenes de Producción
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if pagina_activa == 'costos_indirectos' %}active{% endif %}" href="{% url 'costos_indirectos' %}">
-                            <i class="bi bi-diagram-3 me-1"></i>4. Costos Indirectos (G.I.)
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if pagina_activa == 'articulos_terminados' %}active{% endif %}" href="{% url 'articulos_terminados' %}">
-                            <i class="bi bi-box-seam me-1"></i>5. Art. Terminado
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if pagina_activa == 'resultados' %}active{% endif %}" href="{% url 'resultados' %}">
-                            <i class="bi bi-pie-chart-fill me-1"></i>6. Resultados
-                        </a>
-                    </li>
-                </ul>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" id="btnToggleTheme" title="Cambiar entre modo claro y oscuro">
+                    <i class="bi bi-moon-stars" id="iconTheme"></i>
+                    <span id="labelTheme" class="d-none d-sm-inline">Modo oscuro</span>
+                </button>
 
-                <div class="d-flex flex-wrap gap-2">
-                    <form method="post" action="{% url 'cargar_ejemplo_pizarron' %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-info fw-semibold text-dark" title="Carga los datos preguardados (Órdenes 1050, 1051, 1052, Tarjetas de MP, Nómina y G.I.)">
-                            <i class="bi bi-database-fill-add me-1"></i>Cargar Datos Preguardados
-                        </button>
-                    </form>
-                    {% if hay_datos %}
-                    <form method="post" action="{% url 'limpiar_datos' %}" class="d-inline" onsubmit="return confirm('¿Deseas vaciar todos los datos y dejar el sistema en blanco?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-light" title="Elimina los registros actuales y deja la app vacía por defecto">
-                            <i class="bi bi-trash3 me-1"></i>Vaciar Datos
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
+                <form method="post" action="{% url 'cargar_ejemplo_pizarron' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        Cargar preguardados
+                    </button>
+                </form>
+
+                {% if hay_datos %}
+                <form method="post" action="{% url 'limpiar_datos' %}" class="d-inline" onsubmit="return confirm('¿Vaciar todos los registros del sistema?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        Vaciar todo
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Barra de Indicadores Rápidos (KPIs) -->
-    <div class="bg-white border-bottom py-2 shadow-sm">
-        <div class="container-fluid px-3 px-lg-4">
-            <div class="row g-2 align-items-center text-center text-md-start">
-                <div class="col-6 col-md-3">
-                    <div class="d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
-                        <span class="badge bg-primary-subtle text-primary p-2 rounded-3"><i class="bi bi-boxes fs-6"></i></span>
-                        <div>
-                            <div class="text-muted" style="font-size: 0.72rem;">SALDO M. PRIMA FINAL ({{ metricas_globales.total_tarjetas_mp }} Tarjetas)</div>
-                            <div class="fw-bold text-dark">${{ metricas_globales.mp_final_total|floatformat:2 }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
-                        <span class="badge bg-info-subtle text-info-emphasis p-2 rounded-3"><i class="bi bi-gear-wide-connected fs-6"></i></span>
-                        <div>
-                            <div class="text-muted" style="font-size: 0.72rem;">ÓRDENES EN PROCESO / TERMINADAS</div>
-                            <div class="fw-bold text-dark">{{ metricas_globales.ordenes_en_proceso }} Activas / {{ metricas_globales.ordenes_terminadas }} Term.</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
-                        <span class="badge bg-warning-subtle text-warning-emphasis p-2 rounded-3"><i class="bi bi-lightning-charge fs-6"></i></span>
-                        <div>
-                            <div class="text-muted" style="font-size: 0.72rem;">GASTOS INDIRECTOS (PEND. / TOTAL)</div>
-                            <div class="fw-bold text-dark">${{ metricas_globales.gi_pendiente_total|floatformat:2 }} / ${{ metricas_globales.gi_acumulado_total|floatformat:2 }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
-                        <span class="badge bg-success-subtle text-success p-2 rounded-3"><i class="bi bi-cash-stack fs-6"></i></span>
-                        <div>
-                            <div class="text-muted" style="font-size: 0.72rem;">COSTO ACUMULADO ÓRDENES</div>
-                            <div class="fw-bold text-success">${{ metricas_globales.costo_ordenes_total|floatformat:2 }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mensajes de Retroalimentación Inmediata -->
-    <div class="container-fluid px-3 px-lg-4 mt-3">
+    <!-- Mensajes de Retroalimentación -->
+    <div class="container-xl mt-3">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm d-flex align-items-center gap-2" role="alert">
-                    <i class="bi {% if message.tags == 'error' %}bi-exclamation-octagon-fill{% else %}bi-check-circle-fill{% endif %} fs-5"></i>
-                    <div>{{ message }}</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'info' %}secondary{% else %}success{% endif %} alert-dismissible fade show py-2 px-3 small mb-2" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
     </div>
 
     <!-- Contenido Principal -->
-    <main class="container-fluid px-3 px-lg-4 py-3 mb-5">
+    <main class="container-xl py-3 mb-5">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Modal Universal de Resumen y Confirmación Previa (Pilar 4: Vista Previa / Review) -->
+    <!-- Modal Sencillo de Confirmación Previa -->
     <div class="modal fade" id="modalVistaPrevia" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title d-flex align-items-center gap-2">
-                        <i class="bi bi-shield-check text-info"></i>
-                        <span>Resumen y Confirmación Previa de Captura</span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content sheet">
+                <div class="modal-header border-bottom py-3">
+                    <h6 class="modal-title fw-bold" id="previewTituloFormulario">Confirmar datos antes de guardar</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="alert alert-info py-2 px-3 small mb-3">
-                        <i class="bi bi-info-circle-fill me-1"></i>
-                        <strong>Validación y Normalización Aplicada:</strong> Se han eliminado espacios sobrantes (<code>trim()</code>), estandarizado códigos en <strong>MAYÚSCULAS</strong> y fechas en formato <code>YYYY-MM-DD</code>. Verifica los datos antes de guardar definitivamente.
-                    </div>
-                    <h6 class="fw-bold text-primary mb-2" id="previewTituloFormulario">Operación Contable</h6>
+                <div class="modal-body p-3">
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 38%;">Campo / Concepto</th>
-                                    <th>Valor Normalizado a Registrar</th>
-                                </tr>
-                            </thead>
+                        <table class="table table-sm table-ledger mb-0">
                             <tbody id="previewTablaBody"></tbody>
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer bg-light d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-pencil me-1"></i>Regresar y Editar Sección
+                <div class="modal-footer border-top py-2 d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">
+                        Editar
                     </button>
-                    <button type="button" class="btn btn-success fw-bold px-4" id="btnConfirmarGuardadoFinal">
-                        <i class="bi bi-check2-circle me-1"></i>Confirmar y Guardar Definitivamente
+                    <button type="button" class="btn btn-sm btn-ledger-primary px-3" id="btnConfirmarGuardadoFinal">
+                        Confirmar y guardar
                     </button>
                 </div>
             </div>
@@ -282,6 +370,35 @@
         window.ORDENES_CATALOGO = {{ ordenes_catalogo_json|default:"{}"|safe }};
 
         document.addEventListener("DOMContentLoaded", function () {
+            // Control de Modo Claro / Modo Oscuro
+            const btnTheme = document.getElementById("btnToggleTheme");
+            const iconTheme = document.getElementById("iconTheme");
+            const labelTheme = document.getElementById("labelTheme");
+
+            function actualizarBotonTema(theme) {
+                if (theme === "dark") {
+                    iconTheme.className = "bi bi-sun";
+                    if (labelTheme) labelTheme.textContent = "Modo claro";
+                } else {
+                    iconTheme.className = "bi bi-moon-stars";
+                    if (labelTheme) labelTheme.textContent = "Modo oscuro";
+                }
+            }
+
+            actualizarBotonTema(document.documentElement.getAttribute("data-theme") || "light");
+
+            if (btnTheme) {
+                btnTheme.addEventListener("click", function () {
+                    const actual = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+                    const nuevo = actual === "dark" ? "light" : "dark";
+                    document.documentElement.setAttribute("data-bs-theme", nuevo);
+                    document.documentElement.setAttribute("data-theme", nuevo);
+                    localStorage.setItem("contacostos_theme", nuevo);
+                    actualizarBotonTema(nuevo);
+                });
+            }
+
+            // Normalización automática en campos de texto
             document.querySelectorAll("input[type='text'], input[type='email'], textarea").forEach(function (el) {
                 el.addEventListener("blur", function () {
                     let val = el.value.trim().replace(/\s+/g, " ");
@@ -295,6 +412,7 @@
                 });
             });
 
+            // Vista previa de confirmación antes de guardar
             let formularioPendiente = null;
             const modalEl = document.getElementById("modalVistaPrevia");
             const modalObj = modalEl ? new bootstrap.Modal(modalEl) : null;
@@ -311,14 +429,13 @@
                     e.preventDefault();
                     formularioPendiente = form;
 
-                    const titulo = form.dataset.tituloPreview || "Resumen de Captura Contable";
+                    const titulo = form.dataset.tituloPreview || "Confirmar captura";
                     document.getElementById("previewTituloFormulario").textContent = titulo;
 
                     const tbody = document.getElementById("previewTablaBody");
                     tbody.innerHTML = "";
 
-                    const elements = form.querySelectorAll("input, select, textarea");
-                    elements.forEach(function (input) {
+                    form.querySelectorAll("input, select, textarea").forEach(function (input) {
                         if (input.type === "hidden" || input.type === "submit" || input.name === "csrfmiddlewaretoken") {
                             return;
                         }
@@ -333,7 +450,7 @@
                         }
 
                         const labelEl = form.querySelector(`label[for='${input.id}']`);
-                        let labelTexto = labelEl ? labelEl.innerText.replace("*", "").replace("Opcional", "").trim() : input.name;
+                        let labelTexto = labelEl ? labelEl.innerText.replace("*", "").trim() : input.name;
                         let valorMostrar = input.value;
 
                         if (input.tagName === "SELECT") {
@@ -344,11 +461,11 @@
                         }
 
                         if (!valorMostrar) {
-                            valorMostrar = "<span class='text-muted fst-italic'>— Sin especificar (Opcional) —</span>";
+                            valorMostrar = "—";
                         }
 
                         const tr = document.createElement("tr");
-                        tr.innerHTML = `<td class="fw-semibold text-secondary">${labelTexto}</td><td class="fw-bold text-dark">${valorMostrar}</td>`;
+                        tr.innerHTML = `<td class="text-muted" style="width:42%;">${labelTexto}</td><td class="fw-semibold">${valorMostrar}</td>`;
                         tbody.appendChild(tr);
                     });
 

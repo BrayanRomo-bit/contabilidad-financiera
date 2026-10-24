@@ -356,7 +356,12 @@ class ManoObraDirectaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["orden_produccion"].queryset = OrdenProduccion.objects.filter(estado="EN_PROCESO")
+        self.fields["orden_produccion"].queryset = OrdenProduccion.objects.all()
+        self.fields["horas_trabajadas"].required = False
+        self.fields["cuota_por_hora"].required = False
+        self.fields["importe_total"].required = False
+        self.fields["referencia_nomina"].required = False
+        self.fields["operario_departamento"].required = False
 
     class Meta:
         model = ManoObraDirecta
@@ -382,15 +387,16 @@ class ManoObraDirectaForm(forms.ModelForm):
             "operario_departamento": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Ej. Cuadrilla de Ensamble / Operarios Turno Matutino",
+                    "placeholder": "Ej. Cuadrilla de Ensamble / Operarios",
                 }
             ),
             "horas_trabajadas": forms.NumberInput(
                 attrs={
                     "class": "form-control",
                     "step": "0.01",
-                    "min": "0.01",
+                    "min": "0.00",
                     "id": "id_mo_horas",
+                    "placeholder": "Ej. 1.00",
                 }
             ),
             "cuota_por_hora": forms.NumberInput(
@@ -399,7 +405,7 @@ class ManoObraDirectaForm(forms.ModelForm):
                     "step": "0.01",
                     "min": "0.00",
                     "id": "id_mo_cuota",
-                    "placeholder": "0.00 si capturas importe directo",
+                    "placeholder": "Opcional si capturas importe directo",
                 }
             ),
             "importe_total": forms.NumberInput(
@@ -419,6 +425,45 @@ class ManoObraDirectaForm(forms.ModelForm):
                 }
             ),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        op = cleaned.get("orden_produccion")
+        horas = cleaned.get("horas_trabajadas")
+        cuota = cleaned.get("cuota_por_hora")
+        importe = cleaned.get("importe_total")
+
+        if horas is None or horas <= 0:
+            horas = Decimal("1.00")
+            cleaned["horas_trabajadas"] = horas
+
+        if cuota is None or cuota < 0:
+            cuota = Decimal("0.00")
+            cleaned["cuota_por_hora"] = cuota
+
+        if horas > 0 and cuota > 0:
+            importe = (horas * cuota).quantize(Decimal("0.01"))
+            cleaned["importe_total"] = importe
+
+        if not importe or importe <= 0:
+            self.add_error(
+                "importe_total",
+                "Ingresa el importe total de nómina (o captura horas y cuota por hora mayores a 0).",
+            )
+
+        ref = normalizar_codigo(cleaned.get("referencia_nomina") or "")
+        if not ref and op:
+            ref = f"NOM-{op.codigo}"
+        elif not ref:
+            ref = "NOM-MO"
+        cleaned["referencia_nomina"] = ref
+
+        operario = normalizar_texto(cleaned.get("operario_departamento") or "")
+        if not operario:
+            operario = "Operarios de producción"
+        cleaned["operario_departamento"] = operario
+
+        return cleaned
 
 
 class GastoIndirectoForm(forms.ModelForm):

@@ -518,13 +518,15 @@ class ManoObraDirecta(models.Model):
         max_digits=10,
         decimal_places=2,
         default=Decimal("1.00"),
-        validators=[MinValueValidator(Decimal("0.01"))],
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
     )
     cuota_por_hora = models.DecimalField(
         "Costo / Cuota por Hora ($)",
         max_digits=12,
         decimal_places=2,
         default=Decimal("0.00"),
+        blank=True,
         validators=[MinValueValidator(Decimal("0.00"))],
     )
     importe_total = models.DecimalField(
@@ -552,14 +554,22 @@ class ManoObraDirecta(models.Model):
         verbose_name_plural = "Cargos de Mano de Obra Directa (M.O.)"
         ordering = ["fecha", "id"]
 
-    def clean(self):
-        super().clean()
-        self.referencia_nomina = normalizar_codigo(self.referencia_nomina)
-        self.operario_departamento = normalizar_texto(self.operario_departamento)
+    def clean_fields(self, exclude=None):
+        self.referencia_nomina = normalizar_codigo(self.referencia_nomina) or "NOM-MO"
+        self.operario_departamento = (
+            normalizar_texto(self.operario_departamento) or "Operarios de producción"
+        )
         if self.observaciones:
             self.observaciones = self.observaciones.strip()
-        if self.horas_trabajadas and self.cuota_por_hora and self.cuota_por_hora > 0:
-            self.importe_total = redondear_moneda(self.horas_trabajadas * self.cuota_por_hora)
+        if self.horas_trabajadas is None:
+            self.horas_trabajadas = Decimal("1.00")
+        if self.cuota_por_hora is None:
+            self.cuota_por_hora = Decimal("0.00")
+        if self.horas_trabajadas > 0 and self.cuota_por_hora > 0:
+            self.importe_total = redondear_moneda(
+                self.horas_trabajadas * self.cuota_por_hora
+            )
+        super().clean_fields(exclude=exclude)
 
     def save(self, *args, **kwargs):
         self.full_clean()
